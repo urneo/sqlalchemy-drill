@@ -7,12 +7,11 @@ Created on Thu Dec  1 08:58:12 2016
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from distutils.version import StrictVersion
-from pydrill.dbapi import drill
 from pydrill.client import PyDrill
 from sqlalchemy import exc, pool, types
 from sqlalchemy import util
 from sqlalchemy import VARCHAR, INTEGER, FLOAT, DATE, TIMESTAMP, TIME, Interval, DECIMAL, LargeBinary, BIGINT, SMALLINT
-from sqlalchemy.engine import default
+from sqlalchemy.engine import default, reflection
 from sqlalchemy.sql import compiler
 #from .base import DrillCompiler
 
@@ -109,7 +108,8 @@ class DrillDialect_pydrill(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
-        return drill
+        from pydrill.dbapi import drill as module
+        return module
 
     def create_connect_args(self, url):
 
@@ -141,6 +141,7 @@ class DrillDialect_pydrill(default.DefaultDialect):
 
         return ([], kwargs)
 
+    @reflection.cache
     def get_schema_names(self, connection, **kw):
         return [row.SCHEMA_NAME for row in connection.execute('SHOW DATABASES')]
 
@@ -157,6 +158,7 @@ class DrillDialect_pydrill(default.DefaultDialect):
         except exc.NoSuchTableError:
             return False
 
+    @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
         if len(self.workspace) > 0:
             table_name = self.storage_plugin + "." + self.workspace + ".`" + table_name + "`"
@@ -192,7 +194,7 @@ class DrillDialect_pydrill(default.DefaultDialect):
 
         return result
 
-
+    @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
         location = ""
         if (len(self.workspace) > 0):
@@ -201,16 +203,18 @@ class DrillDialect_pydrill(default.DefaultDialect):
             location = self.storage_plugin
 
         drill = PyDrill(host=self.host, port=self.port)
-        file_dict = drill.query("SHOW FILES IN " + location)
+        curs = drill.query("SHOW tables IN " + location)
 
         temp = []
-        for row in file_dict:
-            temp.append(row['name'])
+        for row in curs:
+            if row=={}: continue
+            temp.append(row['TABLE_NAME'])
 
         table_names = tuple(temp)
 
         return table_names
 
+    @reflection.cache
     def get_view_names(self, connection, schema=None, **kw):
         location = ""
         if (len(self.workspace) > 0):
@@ -229,14 +233,17 @@ class DrillDialect_pydrill(default.DefaultDialect):
 
         return table_names
 
+    @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
         """Drill has no support for foreign keys.  Returns an empty list."""
         return []
 
+    @reflection.cache
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):
         """Drill has no support for primary keys.  Retunrs an empty list."""
         return []
 
+    @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
         """Drill has no support for indexes.  Returns an empty list. """
         return[]
