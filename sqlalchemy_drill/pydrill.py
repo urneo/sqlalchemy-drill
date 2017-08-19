@@ -201,9 +201,11 @@ class DrillDialect_pydrill(default.DefaultDialect):
             location = self.storage_plugin + "." + self.workspace
         else:
             location = self.storage_plugin
+        
+        if schema is None: schema = location
 
         db = PyDrill(host=self.host, port=self.port)
-        curs = db.query("SHOW tables IN " + location)
+        curs = db.query("SHOW tables IN " + schema)
 
         temp = []
         for row in curs:
@@ -222,12 +224,14 @@ class DrillDialect_pydrill(default.DefaultDialect):
         else:
             location = self.storage_plugin
 
+        if schema is None: schema = location
+
         db = PyDrill(host=self.host, port=self.port)
-        curs = db.query("SHOW TABLES IN " + location)
+        curs = db.query("SHOW TABLES IN " + schema)
 
         temp = []
         for row in curs:
-            temp.append(row['name'])
+            temp.append(row['TABLE_NAME'])
 
         table_names = tuple(temp)
 
