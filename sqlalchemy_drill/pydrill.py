@@ -160,13 +160,7 @@ class DrillDialect_pydrill(default.DefaultDialect):
 
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
-        location = ""
-        if len(self.workspace) > 0:
-            location = self.storage_plugin + "." + self.workspace + ".`" + table_name + "`"
-        else:
-            location = self.storage_plugin + ".`" + table_name + "`"
-
-        if schema is None: schema = location
+        if schema is None: schema = self._get_location()
         table_name = schema + ".`" + table_name + "`"
 
         q = "SELECT * FROM %(table_id)s LIMIT 1" % ({"table_id": table_name})
@@ -199,13 +193,7 @@ class DrillDialect_pydrill(default.DefaultDialect):
 
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
-        location = ""
-        if (len(self.workspace) > 0):
-            location = self.storage_plugin + "." + self.workspace
-        else:
-            location = self.storage_plugin
-        
-        if schema is None: schema = location
+        if schema is None: schema = self._get_location()
 
         db = PyDrill(host=self.host, port=self.port)
         curs = db.query("SHOW tables IN " + schema)
@@ -221,13 +209,7 @@ class DrillDialect_pydrill(default.DefaultDialect):
 
     @reflection.cache
     def get_view_names(self, connection, schema=None, **kw):
-        location = ""
-        if (len(self.workspace) > 0):
-            location = self.storage_plugin + "." + self.workspace
-        else:
-            location = self.storage_plugin
-
-        if schema is None: schema = location
+        if schema is None: schema = self._get_location()
 
         db = PyDrill(host=self.host, port=self.port)
         curs = db.query("SHOW TABLES IN " + schema)
@@ -269,6 +251,12 @@ class DrillDialect_pydrill(default.DefaultDialect):
     def _check_unicode_description(self, connection):
         # requests gives back Unicode strings
         return True
+
+    def _get_location(self):
+        if len(self.workspace) > 0:
+            return self.storage_plugin + "." + self.workspace
+        else:
+            return self.storage_plugin
 
 
 '''
