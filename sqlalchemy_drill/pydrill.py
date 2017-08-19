@@ -145,15 +145,15 @@ class DrillDialect_pydrill(default.DefaultDialect):
     def get_schema_names(self, connection, **kw):
         return [row.SCHEMA_NAME for row in connection.execute('SHOW DATABASES')]
 
-    def get_selected_workspace(self):
-        return self.workspace
+    # def get_selected_workspace(self):
+    #     return self.workspace
 
-    def get_selected_storage_plugin(self):
-        return self.storage_plugin
+    # def get_selected_storage_plugin(self):
+    #     return self.storage_plugin
 
     def has_table(self, connection, table_name, schema=None):
         try:
-            self._get_table_columns(connection, table_name, schema)
+            self.get_columns(connection, table_name, schema)
             return True
         except exc.NoSuchTableError:
             return False
@@ -168,14 +168,14 @@ class DrillDialect_pydrill(default.DefaultDialect):
         q = "SELECT * FROM %(table_id)s LIMIT 1" % ({"table_id": table_name})
 
 
-        columns = connection.execute(q)
+        # columns = connection.execute(q)
         result = []
         db = drill.connect(host=self.host, port=self.port)
         cursor = db.cursor()
         cursor.execute(q)
         for info in cursor.description:
-            print( "ROW INFO!!")
-            print( info )
+            # print( "ROW INFO!!")
+            # print( info )
             try:
                 coltype = _type_map[info[1]]
             except KeyError:
@@ -189,7 +189,7 @@ class DrillDialect_pydrill(default.DefaultDialect):
                 "autoincrement": None,
                 "nullable": True,
             }
-            print( column )
+            # print( column )
             result.append(column)
 
         return result
@@ -202,8 +202,8 @@ class DrillDialect_pydrill(default.DefaultDialect):
         else:
             location = self.storage_plugin
 
-        drill = PyDrill(host=self.host, port=self.port)
-        curs = drill.query("SHOW tables IN " + location)
+        db = PyDrill(host=self.host, port=self.port)
+        curs = db.query("SHOW tables IN " + location)
 
         temp = []
         for row in curs:
@@ -222,11 +222,11 @@ class DrillDialect_pydrill(default.DefaultDialect):
         else:
             location = self.storage_plugin
 
-        drill = PyDrill(host=self.host, port=self.port)
-        file_dict = drill.query("SHOW TABLES IN " + location)
+        db = PyDrill(host=self.host, port=self.port)
+        curs = db.query("SHOW TABLES IN " + location)
 
         temp = []
-        for row in file_dict:
+        for row in curs:
             temp.append(row['name'])
 
         table_names = tuple(temp)
