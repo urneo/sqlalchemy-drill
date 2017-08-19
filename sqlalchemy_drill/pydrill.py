@@ -160,13 +160,16 @@ class DrillDialect_pydrill(default.DefaultDialect):
 
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
+        location = ""
         if len(self.workspace) > 0:
-            table_name = self.storage_plugin + "." + self.workspace + ".`" + table_name + "`"
+            location = self.storage_plugin + "." + self.workspace + ".`" + table_name + "`"
         else:
-            table_name = self.storage_plugin + ".`" + table_name + "`"
+            location = self.storage_plugin + ".`" + table_name + "`"
+
+        if schema is None: schema = location
+        table_name = schema + ".`" + table_name + "`"
 
         q = "SELECT * FROM %(table_id)s LIMIT 1" % ({"table_id": table_name})
-
 
         # columns = connection.execute(q)
         result = []
